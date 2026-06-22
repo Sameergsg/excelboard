@@ -105,12 +105,21 @@ router.get('/:id/stats', (req: Request, res: Response) => {
   if (!source || !source.file_path) { res.status(404).json({ error: 'Not found' }); return; }
   const requestedSheet = req.query.sheet as string | undefined;
   const analysis = analyzeFile(source.file_path as string, requestedSheet);
+
+  // Normalize columns to snake_case to match frontend ColumnMeta interface
+  const normalizedColumns = analysis.columns.map(col => ({
+    name: col.name,
+    display_name: col.displayName,
+    data_type: col.dataType,
+    stats: col.stats,
+  }));
+
   // Refresh stored columns when querying the active (or default) sheet
-  const effectiveSheet = requestedSheet || source.active_sheet as string;
   if (!requestedSheet || requestedSheet === source.active_sheet) {
     updateSourceColumns(req.params.id, analysis.columns);
   }
-  res.json(analysis);
+
+  res.json({ ...analysis, columns: normalizedColumns });
 });
 
 router.post('/:id/refresh', (req: Request, res: Response) => {
