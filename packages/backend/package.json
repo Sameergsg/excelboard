@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --experimental-sqlite src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "migrate": "tsx src/db/migrate.ts"
+    "start": "node --experimental-sqlite dist/index.js",
+    "migrate": "tsx --experimental-sqlite src/db/migrate.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
