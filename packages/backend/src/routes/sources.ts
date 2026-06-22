@@ -103,7 +103,14 @@ router.get('/:id/stats', (req: Request, res: Response) => {
   const db = getDb();
   const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(req.params.id) as Row | undefined;
   if (!source || !source.file_path) { res.status(404).json({ error: 'Not found' }); return; }
-  res.json(analyzeFile(source.file_path as string, req.query.sheet as string));
+  const requestedSheet = req.query.sheet as string | undefined;
+  const analysis = analyzeFile(source.file_path as string, requestedSheet);
+  // Refresh stored columns when querying the active (or default) sheet
+  const effectiveSheet = requestedSheet || source.active_sheet as string;
+  if (!requestedSheet || requestedSheet === source.active_sheet) {
+    updateSourceColumns(req.params.id, analysis.columns);
+  }
+  res.json(analysis);
 });
 
 router.post('/:id/refresh', (req: Request, res: Response) => {
@@ -112,7 +119,8 @@ router.post('/:id/refresh', (req: Request, res: Response) => {
   if (!source) { res.status(404).json({ error: 'Not found' }); return; }
   try {
     if (source.file_path && fs.existsSync(source.file_path as string)) {
-      const analysis = analyzeFile(source.file_path as string);
+      // Pass active_sheet so analysis uses the correct sheet
+      const analysis = analyzeFile(source.file_path as string, source.active_sheet as string || undefined);
       db.prepare('UPDATE data_sources SET row_count=?, column_count=?, last_synced_at=?, sheet_names=? WHERE id=?')
         .run(analysis.rowCount, analysis.columnCount, Math.floor(Date.now() / 1000), JSON.stringify(analysis.sheetNames), req.params.id);
       updateSourceColumns(req.params.id, analysis.columns);

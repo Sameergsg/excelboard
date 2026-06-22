@@ -12,7 +12,6 @@ import { Button } from '../ui/Button';
 import { Spinner } from '../ui/Spinner';
 import { formatNumber, aggregate } from '../../lib/utils';
 import { getChartColors } from '../../lib/themes';
-import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { WidgetConfigModal } from '../builder/WidgetConfigModal';
 import { FilterPanel } from './FilterPanel';
 import { useFilters } from '../../hooks/useFilters';
@@ -26,8 +25,7 @@ interface LocalWidget {
   position: { x: number; y: number; w: number; h: number };
 }
 
-function storageKey(sourceId: string) { return `excelboard-widgets-${sourceId}`; }
-function layoutKey(sourceId: string) { return `excelboard-layout-${sourceId}`; }
+function storageKey(sourceId: string, sheet: string) { return `excelboard-widgets-${sourceId}-${sheet}`; }
 
 function buildDefaultWidgets(
   numericCols: ColumnMeta[],
@@ -138,23 +136,29 @@ export function FileDashboard() {
 
   async function loadSource(src: DataSource, sheet?: string) {
     setLoading(true);
+    const targetSheet = sheet || src.active_sheet;
     try {
-      const [det, rows] = await Promise.all([
+      // Fetch base info, row data, AND per-sheet column analysis in parallel
+      const [det, rows, sheetStats] = await Promise.all([
         sourcesApi.get(src.id),
-        sourcesApi.getData(src.id, { pageSize: 999999, sheet: sheet || src.active_sheet }),
+        sourcesApi.getData(src.id, { pageSize: 999999, sheet: targetSheet }),
+        sourcesApi.getStats(src.id, targetSheet),   // fresh column types for THIS sheet
       ]);
-      setDetail(det);
-      setAllRows(rows.data);
-      setActiveSheet(sheet || src.active_sheet);
 
-      // Load saved widgets or build defaults
-      const saved = localStorage.getItem(storageKey(src.id));
+      // Override columns with sheet-specific analysis (fixes multi-sheet column mismatch)
+      const detWithCorrectCols = { ...det, columns: sheetStats.columns };
+      setDetail(detWithCorrectCols);
+      setAllRows(rows.data);
+      setActiveSheet(targetSheet);
+
+      // Each sheet gets its own saved layout
+      const saved = localStorage.getItem(storageKey(src.id, targetSheet));
       if (saved) {
         setWidgets(JSON.parse(saved));
       } else {
-        const numC = det.columns.filter((c: ColumnMeta) => c.data_type === 'numeric');
-        const dateC = det.columns.filter((c: ColumnMeta) => c.data_type === 'date');
-        const catC = det.columns.filter((c: ColumnMeta) => c.data_type === 'categorical');
+        const numC = sheetStats.columns.filter((c: ColumnMeta) => c.data_type === 'numeric');
+        const dateC = sheetStats.columns.filter((c: ColumnMeta) => c.data_type === 'date');
+        const catC = sheetStats.columns.filter((c: ColumnMeta) => c.data_type === 'categorical');
         setWidgets(buildDefaultWidgets(numC, dateC, catC, colors));
       }
     } finally { setLoading(false); }
@@ -167,10 +171,10 @@ export function FileDashboard() {
     filtersApi.clearAll();
   }, [activeSourceId]);
 
-  // Persist widgets to localStorage
+  // Persist widgets to localStorage — keyed by source+sheet so each sheet has its own layout
   const saveWidgets = useCallback((ws: LocalWidget[]) => {
-    if (source) localStorage.setItem(storageKey(source.id), JSON.stringify(ws));
-  }, [source]);
+    if (source && activeSheet) localStorage.setItem(storageKey(source.id, activeSheet), JSON.stringify(ws));
+  }, [source, activeSheet]);
 
   function handleLayoutChange(newLayout: Layout[]) {
     if (!editMode) return;
