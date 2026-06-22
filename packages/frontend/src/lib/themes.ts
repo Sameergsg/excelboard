@@ -14,7 +14,9 @@ export const THEMES: ThemeDefinition[] = [
 ];
 
 export function applyTheme(themeId: ThemeId) {
-  document.documentElement.setAttribute('data-theme', themeId);
+  const html = document.documentElement;
+  THEMES.forEach(t => html.classList.remove(t.id));
+  html.classList.add(themeId);
   localStorage.setItem('excelboard-theme', themeId);
 }
 
@@ -23,8 +25,7 @@ export function getStoredTheme(): ThemeId {
 }
 
 export function getChartColors(): string[] {
-  const el = document.documentElement;
-  const style = getComputedStyle(el);
+  const style = getComputedStyle(document.documentElement);
   return Array.from({ length: 8 }, (_, i) =>
     style.getPropertyValue(`--chart-${i + 1}`).trim()
   ).filter(Boolean);

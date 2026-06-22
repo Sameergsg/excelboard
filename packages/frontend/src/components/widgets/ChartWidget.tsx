@@ -20,7 +20,7 @@ export function ChartWidget({ widget }: { widget: Widget }) {
 
   useEffect(() => {
     if (!widget.source_id) { setLoading(false); return; }
-    sourcesApi.getData(widget.source_id, { pageSize: 10000, sheet: config.sheet }).then(r => {
+    sourcesApi.getData(widget.source_id, { pageSize: 999999, sheet: config.sheet }).then(r => {
       const rows: Record<string, unknown>[] = r.data;
       const xKey = config.xAxis || config.categoryColumn || '';
       const yKeys = config.yAxis?.length ? config.yAxis : (config.valueColumn ? [config.valueColumn] : []);

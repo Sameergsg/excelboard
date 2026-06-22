@@ -9,7 +9,7 @@ export function GaugeWidget({ widget }: { widget: Widget }) {
 
   useEffect(() => {
     if (!widget.source_id || !config.column) return;
-    sourcesApi.getData(widget.source_id, { pageSize: 10000, sheet: config.sheet }).then(r => {
+    sourcesApi.getData(widget.source_id, { pageSize: 999999, sheet: config.sheet }).then(r => {
       const vals = r.data.map((row: Record<string, unknown>) => Number(row[config.column!]));
       setValue(aggregate(vals.map((v: number) => isNaN(v) ? null : v), config.aggregation || 'sum'));
     });

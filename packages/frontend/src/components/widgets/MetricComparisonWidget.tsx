@@ -11,7 +11,7 @@ export function MetricComparisonWidget({ widget }: { widget: Widget }) {
 
   useEffect(() => {
     if (!widget.source_id) return;
-    sourcesApi.getData(widget.source_id, { pageSize: 10000, sheet: config.sheet }).then(r => {
+    sourcesApi.getData(widget.source_id, { pageSize: 999999, sheet: config.sheet }).then(r => {
       const rows: Record<string, unknown>[] = r.data;
       if (config.column) {
         const v = rows.map(row => Number(row[config.column!]));

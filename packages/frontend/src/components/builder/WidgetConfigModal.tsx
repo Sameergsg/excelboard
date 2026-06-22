@@ -24,9 +24,10 @@ interface Props {
   onSave: (type: WidgetType, config: WidgetConfig, sourceId?: string) => void;
   sources: DataSource[];
   existing?: Widget;
+  hideSourseSelector?: boolean;
 }
 
-export function WidgetConfigModal({ open, onClose, onSave, sources, existing }: Props) {
+export function WidgetConfigModal({ open, onClose, onSave, sources, existing, hideSourseSelector }: Props) {
   const [step, setStep] = useState<'type' | 'config'>(existing ? 'config' : 'type');
   const [widgetType, setWidgetType] = useState<WidgetType>(existing?.widget_type || 'kpi');
   const [sourceId, setSourceId] = useState(existing?.source_id || '');
@@ -36,6 +37,13 @@ export function WidgetConfigModal({ open, onClose, onSave, sources, existing }: 
   useEffect(() => {
     if (existing) { setWidgetType(existing.widget_type); setSourceId(existing.source_id || ''); setConfig(existing.config); }
   }, [existing]);
+
+  // When hideSourseSelector is true, auto-load columns from the single source
+  useEffect(() => {
+    if (hideSourseSelector && sources.length === 1 && !sourceId) {
+      setSourceId(sources[0].id);
+    }
+  }, [hideSourseSelector, sources, sourceId]);
 
   useEffect(() => {
     if (sourceId) {
@@ -132,7 +140,7 @@ export function WidgetConfigModal({ open, onClose, onSave, sources, existing }: 
 
           <Input label="Widget Title" val={config.title} onChange={v => upd({ title: v })} ph="My KPI" />
 
-          {widgetType !== 'text' && widgetType !== 'spacer' && (
+          {widgetType !== 'text' && widgetType !== 'spacer' && !hideSourseSelector && (
             <div>
               <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Data Source</label>
               <select value={sourceId} onChange={e => setSourceId(e.target.value)} className="w-full px-2 py-1.5 rounded-lg border text-sm bg-[var(--color-bg-secondary)] border-[var(--color-border)] text-[var(--color-text)]">

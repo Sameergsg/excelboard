@@ -133,6 +133,10 @@ export function getSheetData(
   }
 
   const total = rows.length;
+  // pageSize=0 or very large means return all rows
+  if (pageSize <= 0 || pageSize >= 999999) {
+    return { data: rows, total };
+  }
   const start = (page - 1) * pageSize;
   return { data: rows.slice(start, start + pageSize), total };
 }

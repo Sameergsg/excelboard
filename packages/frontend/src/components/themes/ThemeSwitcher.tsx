@@ -22,7 +22,7 @@ export function ThemeSwitcher() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 bottom-12 z-50 w-72 rounded-2xl border shadow-2xl p-4 bg-[var(--color-card)] border-[var(--color-border)]">
+          <div className="absolute right-0 top-10 z-50 w-72 rounded-2xl border shadow-2xl p-4 bg-[var(--color-card)] border-[var(--color-border)]">
             <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">Choose Theme</p>
 
             <div className="mb-3">

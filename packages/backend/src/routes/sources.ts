@@ -88,7 +88,9 @@ router.get('/:id/data', (req: Request, res: Response) => {
   const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(req.params.id) as Row | undefined;
   if (!source || !source.file_path) { res.status(404).json({ error: 'Not found' }); return; }
   const page = Number(req.query.page) || 1;
-  const pageSize = Math.min(Number(req.query.pageSize) || 100, 1000);
+  const requestedSize = Number(req.query.pageSize) || 100;
+  // Allow unlimited fetch when pageSize=0 or >=999999; otherwise cap preview at 5000
+  const pageSize = requestedSize >= 999999 || requestedSize <= 0 ? 0 : Math.min(requestedSize, 5000);
   const sheet = req.query.sheet as string || source.active_sheet as string;
   const filters: Record<string, string> = {};
   for (const [k, v] of Object.entries(req.query)) {
