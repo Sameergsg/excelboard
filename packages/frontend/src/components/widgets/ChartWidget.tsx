@@ -86,17 +86,17 @@ export function ChartWidget({ widget }: { widget: Widget }) {
         {widget_type === 'line' ? (
           <LineChart {...commonProps}>
             {axes()}
-            {yKeys.map((y, i) => <Line key={y} type={config.smooth ? 'monotone' : 'linear'} dataKey={y} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />)}
+            {yKeys.map((y: string, i: number) => <Line key={y} type={config.smooth ? 'monotone' : 'linear'} dataKey={y} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />)}
           </LineChart>
         ) : widget_type === 'area' ? (
           <AreaChart {...commonProps}>
             {axes()}
-            {yKeys.map((y, i) => <Area key={y} type="monotone" dataKey={y} stroke={colors[i % colors.length]} fill={colors[i % colors.length]} fillOpacity={0.2} strokeWidth={2} />)}
+            {yKeys.map((y: string, i: number) => <Area key={y} type="monotone" dataKey={y} stroke={colors[i % colors.length]} fill={colors[i % colors.length]} fillOpacity={0.2} strokeWidth={2} />)}
           </AreaChart>
         ) : widget_type === 'bar' ? (
           <BarChart {...commonProps} layout={config.horizontal ? 'vertical' : 'horizontal'}>
             {axes()}
-            {yKeys.map((y, i) => <Bar key={y} dataKey={y} fill={colors[i % colors.length]} stackId={config.stacked ? 'stack' : undefined} radius={[4, 4, 0, 0]} />)}
+            {yKeys.map((y: string, i: number) => <Bar key={y} dataKey={y} fill={colors[i % colors.length]} stackId={config.stacked ? 'stack' : undefined} radius={[4, 4, 0, 0]} />)}
           </BarChart>
         ) : widget_type === 'pie' ? (
           <PieChart>
@@ -115,7 +115,7 @@ export function ChartWidget({ widget }: { widget: Widget }) {
             <Scatter data={chartData} fill={colors[0]} />
           </ScatterChart>
         ) : (
-          <BarChart {...commonProps}>{axes()}{yKeys.map((y, i) => <Bar key={y} dataKey={y} fill={colors[i % colors.length]} />)}</BarChart>
+          <BarChart {...commonProps}>{axes()}{yKeys.map((y: string, i: number) => <Bar key={y} dataKey={y} fill={colors[i % colors.length]} />)}</BarChart>
         )}
       </ResponsiveContainer>
     </div>

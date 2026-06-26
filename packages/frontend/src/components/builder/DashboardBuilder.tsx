@@ -52,7 +52,7 @@ export function DashboardBuilder() {
   }
 
   const layout: Layout[] = widgets.map(w => ({
-    i: w.id, x: w.position.x, y: w.position.y, w: w.position.w, h: w.position.h, minW: 2, minH: 2,
+    i: w.id, x: w.position?.x ?? 0, y: w.position?.y ?? 0, w: w.position?.w ?? 4, h: w.position?.h ?? 3, minW: 2, minH: 2,
   }));
 
   async function handleLayoutChange(newLayout: Layout[]) {
@@ -67,7 +67,7 @@ export function DashboardBuilder() {
 
   async function handleAddWidget(type: WidgetType, config: WidgetConfig, sourceId?: string) {
     if (!currentDash) return;
-    const maxY = widgets.reduce((m, w) => Math.max(m, w.position.y + w.position.h), 0);
+    const maxY = widgets.reduce((m, w) => Math.max(m, (w.position?.y ?? 0) + (w.position?.h ?? 3)), 0);
     const result = await dashboardsApi.addWidget(currentDash.id, {
       widget_type: type, source_id: sourceId,
       config, position: { x: 0, y: maxY, w: 4, h: 3 },
@@ -102,7 +102,7 @@ export function DashboardBuilder() {
   async function deleteDashboard() {
     if (!currentDash || !confirm(`Delete "${currentDash.name}"?`)) return;
     await dashboardsApi.delete(currentDash.id);
-    const remaining = dashboards.filter(d => d.id !== currentDash.id);
+    const remaining = dashboards.filter((d: Dashboard) => d.id !== currentDash.id);
     setDashboards(remaining);
     setActiveDashboardId(remaining[0]?.id || null);
   }
@@ -150,7 +150,7 @@ export function DashboardBuilder() {
         <div className="relative flex items-center">
           <select value={activeDashboardId || ''} onChange={e => setActiveDashboardId(e.target.value)}
             className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border text-sm bg-[var(--color-card)] border-[var(--color-border)] text-[var(--color-text)] font-medium cursor-pointer min-w-[160px]">
-            {dashboards.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            {dashboards.map((d: Dashboard) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
           <ChevronDown size={13} className="absolute right-2 pointer-events-none text-[var(--color-text-muted)]" />
         </div>

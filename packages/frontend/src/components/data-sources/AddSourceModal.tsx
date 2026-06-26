@@ -78,7 +78,7 @@ export function AddSourceModal({ open, onClose }: Props) {
       data.sheet_names = ((data as unknown as Record<string, unknown>).sheetNames as string[]) || data.sheet_names || [];
       addSource(data);
       setActiveSourceId(data.id);
-      setActiveTab('file');
+      setActiveTab('dashboard');
       onClose(); reset();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));

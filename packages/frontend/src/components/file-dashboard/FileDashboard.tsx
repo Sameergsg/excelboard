@@ -127,7 +127,7 @@ export function FileDashboard() {
   const catCols = useMemo(() => detail?.columns.filter(c => c.data_type === 'categorical') || [], [detail]);
 
   const filtersApi = useFilters(detail?.columns || []);
-  const filteredRows = useMemo(() => filtersApi.filterRows(allRows), [filtersApi.filterRows, allRows, filtersApi.filters]);
+  const filteredRows = useMemo(() => filtersApi.filterRows(allRows), [filtersApi.filterRows, allRows, filtersApi.isFiltered]);
 
   useEffect(() => {
     const el = document.getElementById('file-dashboard-grid');
@@ -324,7 +324,7 @@ export function FileDashboard() {
               <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border"
                 style={{ background: 'color-mix(in srgb, var(--color-accent) 10%, transparent)', borderColor: 'var(--color-accent)', color: 'var(--color-accent)' }}>
                 {f.label}
-                <button onClick={() => filtersApi.removeFilter(f)}>
+                <button onClick={() => filtersApi.removeFilter(f.key)}>
                   <X size={10} />
                 </button>
               </span>
@@ -513,7 +513,7 @@ function InlineWidgetRenderer({ widget, rows, allRows: _ }: { widget: Widget; ro
   if (widget_type === 'table') {
     const cols = config.columns?.length ? config.columns : Object.keys(rows[0] || {});
     const [search, setSearch] = useState('');
-    const displayed = search ? rows.filter(r => cols.some(c => String(r[c] ?? '').toLowerCase().includes(search.toLowerCase()))) : rows;
+    const displayed = search ? rows.filter(r => cols.some((c: string) => String(r[c] ?? '').toLowerCase().includes(search.toLowerCase()))) : rows;
     return (
       <div className="flex flex-col h-full overflow-hidden">
         {config.searchable && (
@@ -524,12 +524,12 @@ function InlineWidgetRenderer({ widget, rows, allRows: _ }: { widget: Widget; ro
         <div className="overflow-auto flex-1">
           <table className="w-full text-xs">
             <thead className="sticky top-0" style={{ background: 'var(--color-bg-secondary)' }}>
-              <tr>{cols.map(c => <th key={c} className="px-2 py-1.5 text-left font-medium whitespace-nowrap border-b" style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)' }}>{c}</th>)}</tr>
+              <tr>{cols.map((c: string) => <th key={c} className="px-2 py-1.5 text-left font-medium whitespace-nowrap border-b" style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)' }}>{c}</th>)}</tr>
             </thead>
             <tbody>
               {displayed.slice(0, config.pageSize || 50).map((row, i) => (
                 <tr key={i} className="border-b" style={{ borderColor: 'var(--color-border)' }}>
-                  {cols.map(c => <td key={c} className="px-2 py-1 whitespace-nowrap max-w-[120px] truncate" style={{ color: 'var(--color-text-secondary)' }}>{String(row[c] ?? '')}</td>)}
+                  {cols.map((c: string) => <td key={c} className="px-2 py-1 whitespace-nowrap max-w-[120px] truncate" style={{ color: 'var(--color-text-secondary)' }}>{String(row[c] ?? '')}</td>)}
                 </tr>
               ))}
             </tbody>
@@ -656,16 +656,16 @@ function InlineWidgetRenderer({ widget, rows, allRows: _ }: { widget: Widget; ro
     <div className="h-full" style={{ minHeight: 140 }}>
       <ResponsiveContainer width="100%" height="100%">
         {widget_type === 'line' ? (
-          <LineChart {...commonProps}>{axes()}{yKeys.map((y, i) => <Line key={y} type={config.smooth ? 'monotone' : 'linear'} dataKey={y} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />)}</LineChart>
+          <LineChart {...commonProps}>{axes()}{yKeys.map((y: string, i: number) => <Line key={y} type={config.smooth ? 'monotone' : 'linear'} dataKey={y} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />)}</LineChart>
         ) : widget_type === 'area' ? (
-          <AreaChart {...commonProps}>{axes()}{yKeys.map((y, i) => <Area key={y} type="monotone" dataKey={y} stroke={colors[i % colors.length]} fill={colors[i % colors.length]} fillOpacity={0.2} strokeWidth={2} />)}</AreaChart>
+          <AreaChart {...commonProps}>{axes()}{yKeys.map((y: string, i: number) => <Area key={y} type="monotone" dataKey={y} stroke={colors[i % colors.length]} fill={colors[i % colors.length]} fillOpacity={0.2} strokeWidth={2} />)}</AreaChart>
         ) : (
           <BarChart {...commonProps} layout={config.horizontal ? 'vertical' : 'horizontal'}>
             {config.horizontal
               ? <><CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" /><XAxis type="number" tick={AXIS_STYLE} /><YAxis type="category" dataKey={xKey} tick={AXIS_STYLE} width={80} /><Tooltip contentStyle={TOOLTIP_STYLE} /></>
               : axes()
             }
-            {yKeys.map((y, i) => <Bar key={y} dataKey={y} fill={colors[i % colors.length]} stackId={config.stacked ? 'stack' : undefined} radius={[4, 4, 0, 0]} />)}
+            {yKeys.map((y: string, i: number) => <Bar key={y} dataKey={y} fill={colors[i % colors.length]} stackId={config.stacked ? 'stack' : undefined} radius={[4, 4, 0, 0]} />)}
           </BarChart>
         )}
       </ResponsiveContainer>

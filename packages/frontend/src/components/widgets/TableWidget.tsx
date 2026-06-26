@@ -17,7 +17,7 @@ export function TableWidget({ widget }: { widget: Widget }) {
 
   if (loading) return <div className="flex items-center justify-center h-full"><Spinner /></div>;
   const cols = widget.config.columns?.length ? widget.config.columns : Object.keys(rows[0] || {});
-  const filtered = search ? rows.filter(r => cols.some(c => String(r[c] ?? '').toLowerCase().includes(search.toLowerCase()))) : rows;
+  const filtered = search ? rows.filter(r => cols.some((c: string) => String(r[c] ?? '').toLowerCase().includes(search.toLowerCase()))) : rows;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -27,12 +27,12 @@ export function TableWidget({ widget }: { widget: Widget }) {
       <div className="overflow-auto flex-1 mt-2">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-[var(--color-bg-secondary)]">
-            <tr>{cols.map(c => <th key={c} className="px-2 py-1.5 text-left font-medium text-[var(--color-text-secondary)] border-b border-[var(--color-border)] whitespace-nowrap">{c}</th>)}</tr>
+            <tr>{cols.map((c: string) => <th key={c} className="px-2 py-1.5 text-left font-medium text-[var(--color-text-secondary)] border-b border-[var(--color-border)] whitespace-nowrap">{c}</th>)}</tr>
           </thead>
           <tbody>
             {filtered.map((row, i) => (
               <tr key={i} className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)]">
-                {cols.map(c => <td key={c} className="px-2 py-1 text-[var(--color-text-secondary)] whitespace-nowrap max-w-[120px] truncate">{String(row[c] ?? '')}</td>)}
+                {cols.map((c: string) => <td key={c} className="px-2 py-1 text-[var(--color-text-secondary)] whitespace-nowrap max-w-[120px] truncate">{String(row[c] ?? '')}</td>)}
               </tr>
             ))}
           </tbody>

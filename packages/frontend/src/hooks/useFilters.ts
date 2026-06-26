@@ -1,133 +1,158 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { ColumnMeta } from '../types';
+import type { ColMeta } from '../types';
 
-export interface ActiveFilter {
-  column: string;
-  type: 'search' | 'slicer' | 'range' | 'date';
-  value: string | string[] | [number, number] | [string, string];
+type Row = Record<string, unknown>;
+
+interface ActiveFilter {
   label: string;
+  key: string;
 }
 
-export interface FilterState {
+interface UseFiltersResult {
   globalSearch: string;
-  slicers: Record<string, string[]>;      // col -> selected values
-  ranges: Record<string, [number, number]>; // col -> [min, max]
-  dates: Record<string, [string, string]>;  // col -> [from, to]
+  setGlobalSearch: (s: string) => void;
+  slicers: Record<string, string[]>;
+  toggleSlicer: (col: string, value: string) => void;
+  ranges: Record<string, [number, number]>;
+  setRange: (col: string, range: [number, number]) => void;
+  dates: Record<string, [string, string]>;
+  setDateRange: (col: string, range: [string, string]) => void;
+  filterRows: (rows: Row[]) => Row[];
+  activeFilters: ActiveFilter[];
+  clearAll: () => void;
+  removeFilter: (key: string) => void;
+  isFiltered: boolean;
 }
 
-const EMPTY: FilterState = { globalSearch: '', slicers: {}, ranges: {}, dates: {} };
+export function useFilters(cols: ColMeta[]): UseFiltersResult {
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [slicers, setSlicers] = useState<Record<string, string[]>>({});
+  const [ranges, setRanges] = useState<Record<string, [number, number]>>({});
+  const [dates, setDates] = useState<Record<string, [string, string]>>({});
 
-export function useFilters(columns: ColumnMeta[]) {
-  const [filters, setFilters] = useState<FilterState>(EMPTY);
-
-  const setGlobalSearch = useCallback((v: string) => setFilters(f => ({ ...f, globalSearch: v })), []);
-
-  const toggleSlicerValue = useCallback((col: string, val: string) => {
-    setFilters(f => {
-      const current = f.slicers[col] || [];
-      const next = current.includes(val) ? current.filter(v => v !== val) : [...current, val];
-      return { ...f, slicers: { ...f.slicers, [col]: next } };
+  const toggleSlicer = useCallback((col: string, value: string) => {
+    setSlicers(prev => {
+      const current = prev[col] ?? [];
+      const next = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+      if (next.length === 0) {
+        const { [col]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [col]: next };
     });
   }, []);
 
-  const clearSlicer = useCallback((col: string) => {
-    setFilters(f => { const s = { ...f.slicers }; delete s[col]; return { ...f, slicers: s }; });
-  }, []);
-
   const setRange = useCallback((col: string, range: [number, number]) => {
-    setFilters(f => ({ ...f, ranges: { ...f.ranges, [col]: range } }));
-  }, []);
-
-  const clearRange = useCallback((col: string) => {
-    setFilters(f => { const r = { ...f.ranges }; delete r[col]; return { ...f, ranges: r }; });
+    setRanges(prev => ({ ...prev, [col]: range }));
   }, []);
 
   const setDateRange = useCallback((col: string, range: [string, string]) => {
-    setFilters(f => ({ ...f, dates: { ...f.dates, [col]: range } }));
+    setDates(prev => ({ ...prev, [col]: range }));
   }, []);
 
-  const clearDateRange = useCallback((col: string) => {
-    setFilters(f => { const d = { ...f.dates }; delete d[col]; return { ...f, dates: d }; });
-  }, []);
-
-  const clearAll = useCallback(() => setFilters(EMPTY), []);
-
-  const filterRows = useCallback((rows: Record<string, unknown>[]): Record<string, unknown>[] => {
+  const filterRows = useCallback((rows: Row[]): Row[] => {
     let result = rows;
 
-    // Global search across all columns
-    if (filters.globalSearch.trim()) {
-      const q = filters.globalSearch.toLowerCase();
+    // Global search
+    if (globalSearch.trim()) {
+      const q = globalSearch.toLowerCase();
       result = result.filter(row =>
-        Object.values(row).some(v => String(v ?? '').toLowerCase().includes(q))
+        Object.values(row).some(v => v != null && String(v).toLowerCase().includes(q))
       );
     }
 
-    // Slicer filters
-    for (const [col, selected] of Object.entries(filters.slicers)) {
-      if (selected.length > 0) {
-        result = result.filter(row => selected.includes(String(row[col] ?? '')));
-      }
+    // Slicers
+    for (const [col, vals] of Object.entries(slicers)) {
+      if (vals.length === 0) continue;
+      result = result.filter(row => vals.includes(String(row[col] ?? '')));
     }
 
-    // Range filters
-    for (const [col, [min, max]] of Object.entries(filters.ranges)) {
+    // Ranges
+    for (const [col, [min, max]] of Object.entries(ranges)) {
       result = result.filter(row => {
-        const v = Number(row[col]);
-        return !isNaN(v) && v >= min && v <= max;
+        const n = Number(row[col]);
+        return !isNaN(n) && n >= min && n <= max;
       });
     }
 
-    // Date filters
-    for (const [col, [from, to]] of Object.entries(filters.dates)) {
-      const fromTs = from ? new Date(from).getTime() : -Infinity;
-      const toTs = to ? new Date(to).getTime() : Infinity;
+    // Date ranges
+    for (const [col, [from, to]] of Object.entries(dates)) {
+      const fromDate = new Date(from);
+      const toDate = new Date(to);
       result = result.filter(row => {
-        const d = new Date(String(row[col] ?? '')).getTime();
-        return !isNaN(d) && d >= fromTs && d <= toTs;
+        const d = new Date(String(row[col] ?? ''));
+        if (isNaN(d.getTime())) return false;
+        return d >= fromDate && d <= toDate;
       });
     }
 
     return result;
-  }, [filters]);
+  }, [globalSearch, slicers, ranges, dates]);
 
-  const activeFilters: ActiveFilter[] = useMemo(() => {
-    const list: ActiveFilter[] = [];
-    if (filters.globalSearch) list.push({ column: 'All', type: 'search', value: filters.globalSearch, label: `Search: "${filters.globalSearch}"` });
-    for (const [col, vals] of Object.entries(filters.slicers)) {
-      if (vals.length) list.push({ column: col, type: 'slicer', value: vals, label: `${col}: ${vals.join(', ')}` });
+  const activeFilters = useMemo<ActiveFilter[]>(() => {
+    const out: ActiveFilter[] = [];
+
+    if (globalSearch.trim()) {
+      out.push({ label: `Search: "${globalSearch}"`, key: '__search__' });
     }
-    for (const [col, [min, max]] of Object.entries(filters.ranges)) {
-      list.push({ column: col, type: 'range', value: [min, max], label: `${col}: ${min} – ${max}` });
+
+    for (const [col, vals] of Object.entries(slicers)) {
+      if (vals.length === 0) continue;
+      const meta = cols.find(c => c.name === col);
+      const label = meta?.display_name ?? col;
+      out.push({ label: `${label}: ${vals.join(', ')}`, key: `slicer__${col}` });
     }
-    for (const [col, [from, to]] of Object.entries(filters.dates)) {
-      if (from || to) list.push({ column: col, type: 'date', value: [from, to], label: `${col}: ${from || '...'} → ${to || '...'}` });
+
+    for (const [col, [min, max]] of Object.entries(ranges)) {
+      const meta = cols.find(c => c.name === col);
+      const label = meta?.display_name ?? col;
+      out.push({ label: `${label}: ${min} – ${max}`, key: `range__${col}` });
     }
-    return list;
-  }, [filters]);
+
+    for (const [col, [from, to]] of Object.entries(dates)) {
+      const meta = cols.find(c => c.name === col);
+      const label = meta?.display_name ?? col;
+      out.push({ label: `${label}: ${from} → ${to}`, key: `date__${col}` });
+    }
+
+    return out;
+  }, [globalSearch, slicers, ranges, dates, cols]);
+
+  const clearAll = useCallback(() => {
+    setGlobalSearch('');
+    setSlicers({});
+    setRanges({});
+    setDates({});
+  }, []);
+
+  const removeFilter = useCallback((key: string) => {
+    if (key === '__search__') { setGlobalSearch(''); return; }
+    if (key.startsWith('slicer__')) {
+      const col = key.slice('slicer__'.length);
+      setSlicers(prev => { const { [col]: _, ...rest } = prev; return rest; });
+      return;
+    }
+    if (key.startsWith('range__')) {
+      const col = key.slice('range__'.length);
+      setRanges(prev => { const { [col]: _, ...rest } = prev; return rest; });
+      return;
+    }
+    if (key.startsWith('date__')) {
+      const col = key.slice('date__'.length);
+      setDates(prev => { const { [col]: _, ...rest } = prev; return rest; });
+    }
+  }, []);
 
   const isFiltered = activeFilters.length > 0;
 
-  // Unique values per categorical column (computed from full dataset via separate call)
-  const slicerOptions = useMemo(() => {
-    const map: Record<string, string[]> = {};
-    for (const col of columns.filter(c => c.data_type === 'categorical')) {
-      map[col.name] = (col.stats.sampleValues as string[]).map(String);
-    }
-    return map;
-  }, [columns]);
-
-  function removeFilter(f: ActiveFilter) {
-    if (f.type === 'search') setGlobalSearch('');
-    else if (f.type === 'slicer') clearSlicer(f.column);
-    else if (f.type === 'range') clearRange(f.column);
-    else if (f.type === 'date') clearDateRange(f.column);
-  }
-
   return {
-    filters, filterRows, activeFilters, isFiltered, slicerOptions,
-    setGlobalSearch, toggleSlicerValue, clearSlicer,
-    setRange, clearRange, setDateRange, clearDateRange,
-    clearAll, removeFilter,
+    globalSearch, setGlobalSearch,
+    slicers, toggleSlicer,
+    ranges, setRange,
+    dates, setDateRange,
+    filterRows,
+    activeFilters, clearAll, removeFilter, isFiltered,
   };
 }

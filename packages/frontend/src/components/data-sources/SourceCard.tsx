@@ -7,7 +7,7 @@ import { formatDate, formatNumber, sourceTypeLabel } from '../../lib/utils';
 import { sourcesApi } from '../../lib/api';
 import { useAppStore } from '../../stores/useAppStore';
 
-const ICONS = { local: HardDrive, onedrive: Cloud, azure: Database, looker: BarChart2, url: Link };
+const ICONS: Record<string, typeof HardDrive> = { local: HardDrive, onedrive: Cloud, azure: Database, looker: BarChart2, url: Link };
 
 interface Props { source: DataSource; }
 
@@ -62,7 +62,7 @@ export function SourceCard({ source }: Props) {
       <p className="text-xs text-[var(--color-text-muted)]">Last synced: {formatDate(source.last_synced_at)}</p>
 
       <div className="flex gap-2 pt-1">
-        <Button size="sm" onClick={() => { setActiveSourceId(source.id); setActiveTab('file'); }} className="flex-1">
+        <Button size="sm" onClick={() => { setActiveSourceId(source.id); setActiveTab('dashboard'); }} className="flex-1">
           <ExternalLink size={13} /> View Dashboard
         </Button>
         <Button size="sm" variant="secondary" onClick={handleRefresh} title="Refresh">

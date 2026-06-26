@@ -29,13 +29,13 @@ interface Props {
 
 export function WidgetConfigModal({ open, onClose, onSave, sources, existing, hideSourseSelector }: Props) {
   const [step, setStep] = useState<'type' | 'config'>(existing ? 'config' : 'type');
-  const [widgetType, setWidgetType] = useState<WidgetType>(existing?.widget_type || 'kpi');
+  const [widgetType, setWidgetType] = useState<WidgetType>((existing?.widget_type as WidgetType) || 'kpi');
   const [sourceId, setSourceId] = useState(existing?.source_id || '');
   const [columns, setColumns] = useState<ColumnMeta[]>([]);
   const [config, setConfig] = useState<WidgetConfig>(existing?.config || {});
 
   useEffect(() => {
-    if (existing) { setWidgetType(existing.widget_type); setSourceId(existing.source_id || ''); setConfig(existing.config); }
+    if (existing) { setWidgetType(existing.widget_type as WidgetType); setSourceId(existing.source_id || ''); setConfig(existing.config); }
   }, [existing]);
 
   // When hideSourseSelector is true, auto-load columns from the single source
