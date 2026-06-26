@@ -11,13 +11,13 @@ interface Props {
   source: DataSource;
 }
 
-function StatusBadge({ status }: { status: DataSource['status'] }) {
-  const map = {
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { color: string; label: string }> = {
     connected: { color: 'var(--color-success)', label: 'Connected' },
     error: { color: 'var(--color-error)', label: 'Error' },
     syncing: { color: '#f59e0b', label: 'Syncing' },
   };
-  const { color, label } = map[status];
+  const { color, label } = map[status] ?? { color: 'var(--color-success)', label: status ?? 'Connected' };
   return (
     <span
       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"

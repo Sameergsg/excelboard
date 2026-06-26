@@ -150,6 +150,24 @@ export default function KpiBuilderModal({ open, onClose, existingWidget, lockSou
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // When lockSource: auto-load columns from active source+sheet
+  useEffect(() => {
+    if (!lockSource || !sourceId || !sheetName) return;
+    sourcesApi.getStats(sourceId, sheetName)
+      .then((data: { columns?: ColMeta[] }) => {
+        const rawCols = data.columns ?? [];
+        // Normalize camelCase → snake_case from /stats endpoint
+        const normalized: ColMeta[] = rawCols.map((c: ColMeta & { dataType?: string; displayName?: string; display_name?: string; data_type?: string }) => ({
+          name: c.name,
+          display_name: c.display_name ?? c.displayName ?? c.name,
+          data_type: (c.data_type ?? c.dataType ?? 'text') as ColMeta['data_type'],
+          stats: c.stats ?? { nullPct: 0, uniqueCount: 0, sampleValues: [] },
+        }));
+        setCols(normalized);
+      })
+      .catch(() => setCols([]));
+  }, [lockSource, sourceId, sheetName]);
+
   // Fetch rows when source + sheet are set (for filter preview)
   useEffect(() => {
     if (!sourceId || !sheetName) { setRows([]); return; }
