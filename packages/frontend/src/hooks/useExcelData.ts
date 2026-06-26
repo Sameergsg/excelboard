@@ -58,11 +58,12 @@ export function useExcelData(
 
     sourcesApi
       .getData(sourceId, params)
-      .then((data: { rows?: Row[] } | Row[]) => {
+      .then((data: { data?: Row[]; rows?: Row[] } | Row[]) => {
         if (cancelled) return;
+        // Backend returns {data: [...], total: N}
         const fetched: Row[] = Array.isArray(data)
           ? data
-          : (data as { rows?: Row[] }).rows ?? [];
+          : (data as { data?: Row[] }).data ?? (data as { rows?: Row[] }).rows ?? [];
         cache.set(key, fetched);
         setRows(fetched);
       })
